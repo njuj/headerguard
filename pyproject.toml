@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Grade a website's HTTP security headers, cookies and TLS from one request. Zero dependencies, CI-friendly."
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [{ name = "kira", email = "286490266+njuj@users.noreply.github.com" }]
 keywords = ["security", "http", "headers", "csp", "hsts", "tls", "appsec", "devsecops"]
 classifiers = [

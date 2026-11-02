@@ -3,7 +3,7 @@
 **Grade a website's HTTP security posture from a single request.** Security headers, CSP quality, cookie flags, TLS version and certificate health come out as one letter grade, and the CLI can fail your pipeline when a deploy regresses. Zero dependencies.
 
 [![ci](https://github.com/njuj/headerguard/actions/workflows/ci.yml/badge.svg)](https://github.com/njuj/headerguard/actions/workflows/ci.yml)
-![python](https://img.shields.io/badge/python-3.9%2B-00ff9c?labelColor=0b0f17)
+![python](https://img.shields.io/badge/python-3.10%2B-00ff9c?labelColor=0b0f17)
 ![deps](https://img.shields.io/badge/dependencies-0-00ff9c?labelColor=0b0f17)
 ![license](https://img.shields.io/badge/license-MIT-00ff9c?labelColor=0b0f17)
 
