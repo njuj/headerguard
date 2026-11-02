@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "headerguard"
+dynamic = ["version"]
+description = "Grade a website's HTTP security headers, cookies and TLS from one request. Zero dependencies, CI-friendly."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "kira", email = "286490266+njuj@users.noreply.github.com" }]
+keywords = ["security", "http", "headers", "csp", "hsts", "tls", "appsec", "devsecops"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+
+[project.urls]
+Homepage = "https://github.com/njuj/headerguard"
+
+[project.scripts]
+headerguard = "headerguard.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "headerguard.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["headerguard*"]
+
