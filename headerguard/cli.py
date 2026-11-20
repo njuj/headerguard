@@ -8,7 +8,7 @@ import os
 import sys
 from dataclasses import asdict
 
-from . import __version__
+from . import __version__, fix
 from .checks import run_checks
 from .fetch import FetchError, fetch
 from .grade import GRADES, at_least, grade, score
@@ -27,17 +27,23 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--min-grade", choices=GRADES, metavar="GRADE",
                     help=f"exit 1 if any site grades below this ({', '.join(GRADES)})")
+    ap.add_argument("--fix", choices=fix.SERVERS, metavar="SERVER",
+                    help="print the missing headers as config to paste: " + ", ".join(fix.SERVERS) +
+                         " (headers = a Netlify / Cloudflare Pages _headers file); the CSP is built from the page")
     ap.add_argument("--timeout", type=float, default=10, metavar="S", help="network timeout in seconds (default: 10)")
     ap.add_argument("--no-color", action="store_true", help="disable ANSI colours")
     ap.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
     return ap
 
 
-def audit(url: str, timeout: float) -> dict:
+def audit(url: str, timeout: float, server: str | None = None) -> dict:
     snap = fetch(url, timeout)
     checks = run_checks(snap)
-    return {"requested": snap.requested, "url": snap.url, "status": snap.status, "redirects": snap.redirects,
-            "tls": snap.tls, "grade": grade(checks), "score": score(checks), "checks": [asdict(c) for c in checks]}
+    report = {"requested": snap.requested, "url": snap.url, "status": snap.status, "redirects": snap.redirects,
+              "tls": snap.tls, "grade": grade(checks), "score": score(checks), "checks": [asdict(c) for c in checks]}
+    if server:
+        report["fix"] = fix.render(snap, server)
+    return report
 
 
 def render(report: dict, color: bool, glyphs: dict) -> str:
@@ -85,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     reports, failed = [], False
     for url in args.urls:
         try:
-            reports.append(audit(url, args.timeout))
+            reports.append(audit(url, args.timeout, args.fix))
         except FetchError as e:
             print(f"headerguard: {e}", file=sys.stderr)
             failed = True
@@ -97,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
         glyphs = _glyphs(sys.stdout)
         for r in reports:
             print(render(r, color, glyphs))
+            if r.get("fix"):
+                print(r["fix"])
 
     if failed:
         return 2

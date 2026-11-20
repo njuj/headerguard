@@ -15,6 +15,7 @@ class Snapshot:
     headers: list[tuple[str, str]]
     redirects: list[str] = field(default_factory=list)
     tls: dict | None = None
+    body: str = ""          # the HTML, when the response is a page (first 2 MB)
 
     @property
     def https(self) -> bool:

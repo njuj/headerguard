@@ -24,3 +24,4 @@ jobs:
           pip install .
           headerguard --version
           headerguard github.com --min-grade C
+          headerguard example.com --fix caddy

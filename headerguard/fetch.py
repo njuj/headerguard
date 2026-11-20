@@ -13,6 +13,7 @@ from . import __version__
 from .model import Snapshot
 
 USER_AGENT = f"headerguard/{__version__} (+https://github.com/njuj/headerguard)"
+MAX_BODY = 2 << 20      # the page's HTML is read for the content checks and --fix; more is not needed
 
 
 class FetchError(RuntimeError):
@@ -71,6 +72,17 @@ def _get(url: str, timeout: float, verify: bool) -> Snapshot:
 
     with response:
         final, status, headers = response.geturl(), response.getcode(), list(response.headers.items())
+        body = ""
+        if "html" in (response.headers.get("Content-Type") or "").lower():
+            try:
+                raw = response.read(MAX_BODY)
+            except (OSError, ValueError):
+                raw = b""
+            charset = response.headers.get_content_charset() or "utf-8"
+            try:
+                body = raw.decode(charset, errors="replace")
+            except LookupError:
+                body = raw.decode("utf-8", errors="replace")
 
     tls = None
     if verify and final.lower().startswith("https://"):
@@ -78,7 +90,7 @@ def _get(url: str, timeout: float, verify: bool) -> Snapshot:
             tls = tls_info(final, timeout)
         except (OSError, ssl.SSLError, ValueError):
             tls = None
-    return Snapshot(requested=url, url=final, status=status, headers=headers, redirects=recorder.chain, tls=tls)
+    return Snapshot(requested=url, url=final, status=status, headers=headers, redirects=recorder.chain, tls=tls, body=body)
 
 
 def tls_info(url: str, timeout: float) -> dict:

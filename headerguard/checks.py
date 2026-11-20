@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from . import page as html
 from .model import FAIL, INFO, PASS, WARN, Check, Snapshot
 
 HSTS_MIN_AGE = 15_552_000  # 180 days
@@ -188,9 +189,61 @@ def check_legacy_xss(s: Snapshot) -> Check | None:
     return None
 
 
+def _page(s: Snapshot):
+    return html.read(s.body, s.url) if s.body else None
+
+
+def check_sri(s: Snapshot, p=None) -> Check | None:
+    """Scripts and stylesheets from another origin without `integrity`: whoever controls that host controls the page."""
+    p = p or _page(s)
+    if p is None:
+        return None
+    own = html.origin_of(s.url)
+    foreign = [r for r in p.resources if r.kind in ("script", "style") and html.origin_of(r.url) != own]
+    if not foreign:
+        return Check("sri", "Subresource Integrity", INFO, "no third-party scripts or stylesheets")
+    missing = list(dict.fromkeys(html.origin_of(r.url).split("://", 1)[1] for r in foreign if not r.integrity))
+    if not missing:
+        return Check("sri", "Subresource Integrity", PASS, f"all {len(foreign)} third-party script(s)/stylesheet(s) pinned")
+    shown = ", ".join(missing[:3]) + (f" and {len(missing) - 3} more" if len(missing) > 3 else "")
+    n = sum(1 for r in foreign if not r.integrity)
+    return Check("sri", "Subresource Integrity", WARN, f"{n} third-party file(s) without integrity= from {shown}",
+                 min(6, 2 * len(missing)))
+
+
+def check_mixed(s: Snapshot, p=None) -> Check | None:
+    """http:// resources on an https page: scripts, styles and frames are blocked by browsers or hijackable."""
+    p = p or _page(s)
+    if p is None or not s.https:
+        return None
+    insecure = [r for r in p.resources if r.url.startswith("http://") and r.kind != "form"]
+    active = [r for r in insecure if r.kind in ("script", "style", "frame", "font", "connect", "worker")]
+    if active:
+        return Check("mixed", "Mixed content", FAIL,
+                     f"{len(active)} active resource(s) over http://, e.g. {active[0].url[:70]}", 10)
+    if insecure:
+        return Check("mixed", "Mixed content", WARN,
+                     f"{len(insecure)} image/media file(s) over http://, e.g. {insecure[0].url[:70]}", 3)
+    return Check("mixed", "Mixed content", PASS, "every resource over https://")
+
+
+def check_forms(s: Snapshot, p=None) -> Check | None:
+    p = p or _page(s)
+    forms = [r for r in (p.resources if p else []) if r.kind == "form"]
+    if not forms:
+        return None
+    plain = [r.url for r in forms if r.url.startswith("http://")]
+    if plain and s.https:
+        return Check("forms", "Forms", FAIL, f"form posts over plain HTTP to {plain[0][:70]}", 10)
+    return Check("forms", "Forms", PASS, f"{len(forms)} form(s), all submit over https://")
+
+
 CHECKS = (check_https, check_tls, check_hsts, check_csp, check_framing, check_nosniff, check_referrer,
           check_permissions, check_coop, check_cookies, check_leaks, check_legacy_xss)
+PAGE_CHECKS = (check_sri, check_mixed, check_forms)
 
 
 def run_checks(s: Snapshot) -> list[Check]:
-    return [c for c in (check(s) for check in CHECKS) if c is not None]
+    p = _page(s)
+    out = [check(s) for check in CHECKS] + ([check(s, p) for check in PAGE_CHECKS] if p else [])
+    return [c for c in out if c is not None]
