@@ -66,7 +66,7 @@ def main(sites: list[str]) -> None:
             head = (f'<base href="{s.url}"><meta http-equiv="Content-Security-Policy" '
                     f'content="{meta_policy(csp, html.origin_of(s.url), drop)}">')
             doc = re.sub(r"(<head[^>]*>)", lambda m: m.group(1) + head, s.body, count=1, flags=re.I)
-            f = work / f"{re.sub(r'[^\w]+', '_', site)}_{label}.html"
+            f = work / (re.sub(r"\W+", "_", site) + f"_{label}.html")
             f.write_text(doc if doc != s.body else head + s.body, encoding="utf-8", newline="")
             found[label] = violations(f, str(work / "profile"))
         print(f"{site:24} inline scripts {len(p.inline_scripts):3}  handlers {len(p.handlers):2}  "
