@@ -1,5 +1,7 @@
 # headerguard
 
+[![Part of Cryptid Security](https://img.shields.io/badge/part_of-Cryptid%20Security-00ff9c?style=flat-square&labelColor=0d1117)](https://github.com/cryptid-security)
+
 **Grade a website's HTTP security posture from a single request, then write the fix.** Security headers, CSP quality, cookie flags, TLS, and what the page itself loads (third-party scripts without integrity, mixed content, forms posting over HTTP) come out as one letter grade. `--fix nginx|apache|caddy|headers` prints the missing headers as config to paste, with a Content-Security-Policy built from the page: every origin it loads from and a SHA-256 hash for every inline script. Checked in real Chrome on 19 live sites. Zero dependencies.
 
 [![ci](https://github.com/njuj/headerguard/actions/workflows/ci.yml/badge.svg)](https://github.com/njuj/headerguard/actions/workflows/ci.yml)
